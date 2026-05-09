@@ -714,214 +714,230 @@ do
 	end
 
 function a.l()
-	local b, c, d, e, f, g, h =
+	local b, c, d, e, f, g =
 		a.load("g"),
 		a.load("a"),
 		a.load("c"),
 		a.load("b"),
-		a.load("d"),
 		a.load("i"),
 		a.load("h")
 
-	local i, j, k, l, m =
-		f.LocalPlayer.Entity,
-		utility.GetTickCount,
-		keyboard.IsPressed,
-		keyboard.Click,
-		game.GetService("Stats")
+	local h = f.LocalPlayer.Entity
 
-	local n = m.Network.ServerStatsItem["Data Ping"]
+	local i = utility.GetTickCount
+	local j = keyboard.IsPressed
+	local k = keyboard.Click
 
-	local o = c:Register("AutoBlackFlashState", {
+	local l = game.GetService("Stats")
+	local m = l.Network.ServerStatsItem["Data Ping"]
+
+	local n = c:Register("AutoBlackFlashState", {
 		Waiting = false,
 		WasDown = false,
+
 		LastActivation = 0,
 		QueueTime = 0,
 
-		FrameHistory = {},
 		LastFrame = 0,
+		FrameHistory = {},
 
 		Prediction = 0,
 		CurrentAnimation = nil,
 	})
 
-	local p = c:Register("AutoBlackFlashAnimations", {
-		FocusStrike = true,
-		DivergentFist = true,
-		BlackFlash = true,
-	})
-
-	local q = {
+	local o = {
 		Cooldown = 120,
+
 		MaxPrediction = 0.040,
 		MinPrediction = 0.001,
+
+		MaxFrameHistory = 20,
 	}
 
-	local function r(s)
+	local p = c:Register("AutoBlackFlashAnimationNames", {
+		["Focus Strike"] = true,
+		["Divergent Fist"] = true,
+		["Black Flash"] = true,
+		["FocusStrike"] = true,
+		["DivergentFist"] = true,
+	})
+
+	local function q(r)
 		if not e.GetValue("Debug Mode") then
 			return
 		end
 
-		b.AddDebugMessage(s, "info", 1200)
+		b.AddDebugMessage(r, "info", 1200)
+	end
+
+	local function r()
+		local s = m.Value
+
+		if not s then
+			return 50
+		end
+
+		return s
 	end
 
 	local function s()
-		local t = f:GetLocalPlayer()
+		local t = n.FrameHistory
 
-		if not t or not t.Animations then
+		if #t <= 0 then
+			return 0.016
+		end
+
+		local u = 0
+
+		for v = 1, #t do
+			u = u + t[v]
+		end
+
+		return u / #t
+	end
+
+	local function t()
+		local u = i()
+
+		if n.LastFrame ~= 0 then
+			local v = (u - n.LastFrame) / 1000
+
+			local w = n.FrameHistory
+
+			w[#w + 1] = v
+
+			if #w > o.MaxFrameHistory then
+				table.remove(w, 1)
+			end
+		end
+
+		n.LastFrame = u
+	end
+
+	local function u()
+		local v = r() / 1000
+		local w = s()
+
+		local x = w * 0.5
+		local y = 0
+
+		if w >= 0.020 then
+			y = y + 0.004
+		end
+
+		if w >= 0.030 then
+			y = y + 0.008
+		end
+
+		local z = v + x + y
+
+		return math.clamp(
+			z,
+			o.MinPrediction,
+			o.MaxPrediction
+		)
+	end
+
+	local function v()
+		local w = f:GetLocalPlayer()
+
+		if not w then
 			return nil
 		end
 
-		for u = 1, #t.Animations do
-			local v = t.Animations[u]
+		local x = w.Animations
 
-			if p[v.Animation.Name] then
-				return v
+		if not x then
+			return nil
+		end
+
+		for y = 1, #x do
+			local z = x[y]
+
+			if z and z.Animation then
+				local A = z.Animation.Name
+
+				if p[A] then
+					return z
+				end
 			end
 		end
 
 		return nil
 	end
 
-	local function t()
-		local u = n:GetValue()
-
-		if not u then
-			return 50
-		end
-
-		return u
-	end
-
-	local function u()
-		local v = o.FrameHistory
-
-		if #v <= 0 then
-			return 0.016
-		end
-
-		local w = 0
-
-		for x = 1, #v do
-			w += v[x]
-		end
-
-		return w / #v
-	end
-
-	local function v()
-		local w = t() / 1000
-		local x = u()
-
-		local y = x * 0.5
-
-		local z = 0
-
-		if x >= 0.020 then
-			z += 0.004
-		end
-
-		if x >= 0.030 then
-			z += 0.008
-		end
-
-		local A = w + y + z
-
-		return math.clamp(
-			A,
-			q.MinPrediction,
-			q.MaxPrediction
-		)
-	end
-
 	local function w()
-		local x = j()
+		local x = v()
 
-		if o.LastFrame ~= 0 then
-			local y = (x - o.LastFrame) / 1000
-
-			local z = o.FrameHistory
-
-			z[#z + 1] = y
-
-			if #z > 20 then
-				table.remove(z, 1)
-			end
-		end
-
-		o.LastFrame = x
-	end
-
-	local function x()
-		local y = s()
-
-		if not y then
-			o.CurrentAnimation = nil
+		if not x then
+			n.CurrentAnimation = nil
+			n.Waiting = false
 			return
 		end
 
-		o.CurrentAnimation = y
+		n.CurrentAnimation = x
 
-		local z = y.TimePosition
+		local y = x.TimePosition
 
-		local A =
+		local z =
 			e.GetValue("Auto Blackflash Timing")
 			or 0.285
 
-		local B = v()
+		local A = u()
 
-		o.Prediction = B
+		n.Prediction = A
 
-		local C = A - B
+		local B = z - A
 
-		if z >= C and not o.Waiting then
-			o.QueueTime = j()
-			o.Waiting = true
+		if y >= B and not n.Waiting then
+			n.Waiting = true
+			n.QueueTime = i()
 
-			r(
+			q(
 				string.format(
-					"Queued BF | TP: %.3f | Pred: %.3f",
-					z,
-					B
+					"Queued BF | TP %.3f | Pred %.3f | Ping %d",
+					y,
+					A,
+					r()
 				)
 			)
 		end
 	end
 
+	local function x()
+		if not n.Waiting then
+			return
+		end
+
+		local y = i()
+
+		if (y - n.LastActivation) <= o.Cooldown then
+			return
+		end
+
+		k(0x33)
+
+		n.LastActivation = y
+		n.Waiting = false
+
+		q("Perfect-frame Black Flash triggered.")
+	end
+
 	local function y()
-		if not o.Waiting then
-			return
+		t()
+
+		local z = j(0x33)
+
+		if z and not n.WasDown then
+			w()
 		end
 
-		local z = j()
+		x()
 
-		if (z - o.LastActivation) <= q.Cooldown then
-			return
-		end
-
-		l(0x33)
-
-		o.LastActivation = z
-		o.Waiting = false
-
-		r("Perfect-frame Black Flash")
+		n.WasDown = z
 	end
 
-	local function z()
-		w()
-
-		local A = k(0x33)
-
-		if A and not o.WasDown then
-			x()
-		end
-
-		y()
-
-		o.WasDown = A
-	end
-
-	function q:Initialise()
+	function o:Initialise()
 		d.Add("onUpdate", function()
 			if not e.GetValue("Auto Blackflash") then
 				return
@@ -932,51 +948,20 @@ function a.l()
 			end
 
 			if
-				not g:DoesPlayerHaveMove(i, "Focus Strike")
-				and not g:DoesPlayerHaveMove(i, "Divergent Fist")
+				not f:DoesPlayerHaveMove(h, "Focus Strike")
+				and not f:DoesPlayerHaveMove(h, "Divergent Fist")
 			then
 				return
 			end
 
-			z()
+			y()
 		end)
 	end
 
-	return q
+	return o
 end
 
-  
-		local n = function()
-			local n, o, p = i(), j(0x33), l.CombatState
-			if o and not p.WasDown and not p.Waiting then
-				local q = e.GetValue("Auto Blackflash Timing")
-				local r = q * 1000
-				p.NextPressTime = n + r
-				p.Waiting = true
-			end
-			if p.Waiting and n >= p.NextPressTime then
-				k(0x33)
-				p.Waiting = false
-				m("Completed Yuji/Mahito Blackflash.")
-			end
-			l.WasDown = o
-		end
-		function l:Initialise()
-			d.Add("onUpdate", function(...)
-				if not e.GetValue("Auto Blackflash") then
-					return
-				end
-				if e.GetValue("Auto Blackflash Hotkey") ~= true then
-					return
-				end
-				if not g:DoesPlayerHaveMove(h, "Focus Strike") and not g:DoesPlayerHaveMove(h, "Divergent Fist") then
-					return
-				end
-				n()
-			end)
-		end
-		return l
-	end
+	
 	function a.m()
 		local b, c, d, e, f, g =
 			{ LastClick = 0 }, a.load("d"), a.load("b"), a.load("c"), utility.GetTickCount, keyboard.Click
