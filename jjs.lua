@@ -722,6 +722,14 @@ function a.l()
 		a.load("i"),
 		a.load("h")
 
+local LocalPlayer = f and f.LocalPlayer
+local Entity = LocalPlayer and LocalPlayer.Entity
+
+if not Entity then
+    warn("Entity is nil")
+    return
+end
+		
 	local h = f.LocalPlayer.Entity
 
 	local i = utility.GetTickCount
